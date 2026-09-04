@@ -1,0 +1,63 @@
+// ═══════════════════════════════════════════════════════════════════════
+//  Private Allowlist Counter
+//  Midnight Builder Challenge — Level 1 (New Moon)
+// ═══════════════════════════════════════════════════════════════════════
+//
+//  PRIVACY MODEL — what is public vs. what is private:
+//
+//  PUBLIC (stored on-chain, visible to everyone):
+//    * count — the running tally of authorized increments
+//    * owner — a hash commitment to the authorized key (NOT the key)
+//
+//  PRIVATE (private witness input, never written on-chain):
+//    * ownerKey — the caller's 32-byte secret key. It lives only in
+//      the DApp's local private state and enters the circuit as a
+//      private witness input. The chain never sees it.
+//
+//  WHAT THE USER PROVES WITHOUT REVEALING:
+//    * increment() proves in zero knowledge that the caller knows
+//      the secret key whose hash matches the public `owner`
+//      commitment. A valid proof increments the tally; an invalid
+//      one is rejected. Either way, the key itself is never
+//      disclosed — only the single bit of information "the caller
+//      knows the key" leaks.
+//
+//  DELIBERATE DISCLOSURE:
+//    * disclose() is used exactly once, in the constructor, to
+//      publish the owner commitment. The secret key is hashed
+//      before disclosure, so nothing sensitive becomes public.
+// ═══════════════════════════════════════════════════════════════════════
+
+pragma language_version 0.23;
+
+import CompactStandardLibrary;
+
+// PUBLIC ledger state: the tally anyone can read
+export ledger count: Field;
+
+// PUBLIC ledger state: hash commitment binding the counter to one key
+export ledger owner: Bytes<32>;
+
+// The constructor runs once, at deployment. The owner commitment is
+// derived from the deployer's secret key and deliberately disclosed.
+constructor() {
+  count = 0;
+  owner = disclose(commitment());
+}
+
+// PRIVATE witness: returns the caller's secret key from the DApp's
+// local private state. Implemented in TypeScript (contracts/witnesses.ts).
+witness ownerKey(): Bytes<32>;
+
+// Internal circuit: a domain-separated hash of the secret key.
+// The result is safe to publish; the input never is.
+circuit commitment(): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([pad(32, "counter:owner:"), ownerKey()]);
+}
+
+// The one proof-carrying entry point: only someone who can produce
+// the secret key (in the witness) may increment the public tally.
+export circuit increment(): [] {
+  assert(owner == commitment(), "Only the owner can increment this counter");
+  count = disclose(count + 1);
+}
