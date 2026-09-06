@@ -1,5 +1,5 @@
-import { Ledger } from '../managed/counter/contract/index.js';
-import { WitnessContext } from '@midnight-ntwrk/midnight-js-protocol/compact-runtime';
+import type { Ledger } from '../managed/counter/contract/index.js';
+import type { WitnessContext } from '@midnight-ntwrk/midnight-js-protocol/compact-runtime';
 
 /**
  * Shape of the contract's private state, held by the DApp's

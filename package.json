@@ -13,9 +13,11 @@
     "test:watch": "NODE_OPTIONS='--experimental-vm-modules' vitest",
     "proof:up": "docker compose up -d --wait proof-server",
     "proof:down": "docker compose stop proof-server",
-    "wallet:address": "vite-node scripts/address.ts",
-    "deploy:preview": "vite-node scripts/deploy.ts preview",
-    "deploy:preprod": "vite-node scripts/deploy.ts preprod",
+    "wallet:address": "tsx scripts/address.ts preview",
+    "deploy:preview": "tsx scripts/deploy.ts preview",
+    "deploy:preprod": "tsx scripts/deploy.ts preprod",
+    "increment:preview": "tsx scripts/increment.ts preview",
+    "increment:preprod": "tsx scripts/increment.ts preprod",
     "build": "tsc --noEmit"
   },
   "dependencies": {
@@ -39,6 +41,7 @@
     "@midnight-ntwrk/compact-runtime": "0.16.0",
     "@types/node": "^22.0.0",
     "@types/ws": "^8.5.9",
+    "tsx": "^4.23.13",
     "typescript": "^5.7.0",
     "vitest": "^4.1.0"
   }
