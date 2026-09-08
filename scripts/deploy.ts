@@ -22,9 +22,7 @@ import {
   type DeployedContract,
 } from '@midnight-ntwrk/midnight-js-contracts';
 import {
-  MidnightWalletProvider,
   waitForFunds,
-  syncWallet,
   type EnvironmentConfiguration,
 } from '@midnight-ntwrk/testkit-js';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
@@ -39,6 +37,7 @@ import {
   zkConfigPath,
   type CounterPrivateState,
 } from '../contracts/index.js';
+import { buildPersistentWallet, syncWithProgress } from '../src/wallet.js';
 import { getConfig, type NetworkName } from '../src/config.js';
 import { loadEnvFile, resolveSecret } from './env.js';
 
@@ -61,7 +60,6 @@ const logger = pino({
 });
 
 const PRIVATE_STATE_ID = 'counterPrivateState';
-const SYNC_TIMEOUT_MS = Number(process.env['MIDNIGHT_SYNC_TIMEOUT_MS'] ?? 60 * 60_000);
 
 // The owner key: a fresh random 32-byte secret for this deployment.
 // Only its hash commitment ever reaches the chain.
@@ -75,15 +73,23 @@ const envConfig: EnvironmentConfiguration = {
 
 // ─── wallet ───────────────────────────────────────────────────────────
 logger.info(`Building wallet for '${network}'...`);
-const wallet = await MidnightWalletProvider.build(logger, envConfig, secret.value);
-const address = wallet.unshieldedKeystore.getBech32Address().asString();
+// A persistent wallet saves its shielded/dust sync positions to .states/ so
+// the multi-hour genesis sync resumes across runs instead of restarting.
+const wallet = await buildPersistentWallet(logger, envConfig, network, secret.value);
+const provider = wallet.provider;
+const address = provider.unshieldedKeystore.getBech32Address().asString();
 logger.info(`Wallet address: ${address}`);
-await wallet.start();
-await syncWallet(wallet.wallet, undefined, SYNC_TIMEOUT_MS);
+await provider.start(false);
+await syncWithProgress(logger, wallet);
 logger.info('Wallet synced');
 
 // NIGHT -> DUST registration (idempotent). Requires faucet tNIGHT.
-const nightBalance = await waitForFunds(wallet.wallet, envConfig, false, wallet.unshieldedKeystore);
+const nightBalance = await waitForFunds(
+  provider.wallet,
+  envConfig,
+  false,
+  provider.unshieldedKeystore,
+);
 logger.info(`Wallet NIGHT balance: ${nightBalance}`);
 
 // ─── providers ───────────────────────────────────────────────────────
@@ -94,13 +100,13 @@ const providers: MidnightProviders<'increment', typeof PRIVATE_STATE_ID, Counter
     signingKeyStoreName: 'counter-signing-keys',
     privateStoragePasswordProvider: () =>
       process.env['MIDNIGHT_PRIVATE_STATE_PASSWORD'] ?? 'newmoon-counter-demo-password',
-    accountId: wallet.getCoinPublicKey(),
+    accountId: provider.getCoinPublicKey(),
   }),
   publicDataProvider: indexerPublicDataProvider(config.indexer, config.indexerWS),
   zkConfigProvider,
   proofProvider: httpClientProofProvider(config.proofServer, zkConfigProvider),
-  walletProvider: wallet,
-  midnightProvider: wallet,
+  walletProvider: provider,
+  midnightProvider: provider,
 };
 
 // ─── deploy ───────────────────────────────────────────────────────────
@@ -156,5 +162,8 @@ writeFileSync(
 );
 logger.info('Saved deployment.json');
 
-await wallet.stop();
+// Save the synced wallet state so future runs (increment.ts) resume instantly.
+await wallet.saveState();
+
+await provider.stop();
 logger.info('Done. The counter is live — the owner key never touched the chain.');

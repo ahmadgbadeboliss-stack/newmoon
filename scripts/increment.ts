@@ -9,11 +9,7 @@ import { WebSocket } from 'ws';
 import pino from 'pino';
 import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
-import {
-  MidnightWalletProvider,
-  syncWallet,
-  type EnvironmentConfiguration,
-} from '@midnight-ntwrk/testkit-js';
+import type { EnvironmentConfiguration } from '@midnight-ntwrk/testkit-js';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config-provider';
@@ -26,6 +22,7 @@ import {
   zkConfigPath,
   type CounterPrivateState,
 } from '../contracts/index.js';
+import { buildPersistentWallet, syncWithProgress } from '../src/wallet.js';
 import { getConfig, type NetworkName } from '../src/config.js';
 import { loadEnvFile, resolveSecret } from './env.js';
 
@@ -57,13 +54,12 @@ const envConfig: EnvironmentConfiguration = {
   ...config,
 };
 
-const wallet = await MidnightWalletProvider.build(
-  logger,
-  envConfig,
-  secret.kind === 'seed' ? secret.value : undefined,
-);
-await wallet.start();
-await syncWallet(wallet.wallet, undefined, Number(process.env['MIDNIGHT_SYNC_TIMEOUT_MS'] ?? 60 * 60_000));
+const wallet = await buildPersistentWallet(logger, envConfig, network, secret.value);
+const provider = wallet.provider;
+// start(false) + explicit long sync: the built-in funds wait uses a hard 90s
+// sync timeout, too short for a fresh Preview wallet syncing from genesis.
+await provider.start(false);
+await syncWithProgress(logger, wallet);
 
 const zkConfigProvider = new NodeZkConfigProvider<'increment'>(zkConfigPath);
 const providers: MidnightProviders<'increment', typeof PRIVATE_STATE_ID, CounterPrivateState> = {
@@ -72,13 +68,13 @@ const providers: MidnightProviders<'increment', typeof PRIVATE_STATE_ID, Counter
     signingKeyStoreName: 'counter-signing-keys',
     privateStoragePasswordProvider: () =>
       process.env['MIDNIGHT_PRIVATE_STATE_PASSWORD'] ?? 'newmoon-counter-demo-password',
-    accountId: wallet.getCoinPublicKey(),
+    accountId: provider.getCoinPublicKey(),
   }),
   publicDataProvider: indexerPublicDataProvider(config.indexer, config.indexerWS),
   zkConfigProvider,
   proofProvider: httpClientProofProvider(config.proofServer, zkConfigProvider),
-  walletProvider: wallet,
-  midnightProvider: wallet,
+  walletProvider: provider,
+  midnightProvider: provider,
 };
 
 const found = await findDeployedContract(providers, {
@@ -101,4 +97,5 @@ const stateAfter = ledger(
 );
 console.log(`\n  Count: ${stateBefore.count} -> ${stateAfter.count}  (owner key never revealed)\n`);
 
-await wallet.stop();
+await wallet.saveState();
+await provider.stop();

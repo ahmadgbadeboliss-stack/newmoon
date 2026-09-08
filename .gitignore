@@ -11,6 +11,7 @@ dist/
 
 # Wallet data
 deployment.json
+.states/
 
 # Editor
 .vscode/
