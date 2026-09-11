@@ -163,7 +163,19 @@ See [PROPOSAL.md](./PROPOSAL.md) — chosen from the Level 3 idea list: **Privat
 
 ## Initial Idea
 
-[LEAVE PLACEHOLDER — I will fill this in manually]
+**Private Allowlist Access.** A membership gate where a user proves they belong
+to an approved group without revealing *which* member they are — and without
+the group's roster becoming public. On a transparent chain an allowlist is a
+public list of addresses: the roster leaks to anyone who reads state, and
+proving you are on it means transacting from the address that is on it, linking
+your access to your entire history. This contract is the seed of the
+alternative. The `owner` commitment is a one-entry allowlist, and `increment()`
+is a member proving authority in zero knowledge while the tally stays publicly
+auditable. Grown out, the same pattern gives private allowlists for gated
+content, eligibility gates that prove a threshold without revealing the value,
+and anonymous surveys with verifiable participation.
+
+Full write-up in [PROPOSAL.md](./PROPOSAL.md).
 
 ## Demo Video
 
