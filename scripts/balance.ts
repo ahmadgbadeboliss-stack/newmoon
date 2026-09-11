@@ -71,14 +71,36 @@ const state = await firstValueFrom(provider.wallet.state());
 const night = unshieldedToken().raw;
 const balance = state.unshielded.balances?.[night] ?? 0n;
 
+// DUST -- not NIGHT -- pays transaction fees on Midnight. It is generated
+// over time by NIGHT that has been registered for dust generation, so a
+// wallet can hold plenty of NIGHT and still be unable to pay for a deploy.
+// Reported only after a --full sync, since the dust wallet must be caught up
+// for this figure to mean anything.
+let dustNote = fullSync ? '0' : '(needs --full to read)';
+if (fullSync) {
+  try {
+    dustNote = state.dust.balance(new Date()).toString();
+  } catch {
+    dustNote = '(unavailable)';
+  }
+}
+
 console.log('\n════════════════════════════════════════════════════════');
 console.log(`  Network:            ${network}`);
 console.log(`  Unshielded address: ${address}`);
 console.log(`  NIGHT balance:      ${balance}`);
+console.log(`  DUST balance:       ${dustNote}   <- pays fees`);
 console.log('════════════════════════════════════════════════════════');
 
 if (balance > 0n) {
-  console.log('\nFUNDED\n');
+  console.log('\nFUNDED (NIGHT)');
+  if (fullSync && dustNote === '0') {
+    console.log('But DUST is 0, so no transaction can pay its fee yet.');
+    console.log('Register NIGHT for dust generation ("Generate tDUST" in Lace,');
+    console.log('or run the deploy script, which registers automatically), then');
+    console.log('wait for dust to accrue.');
+  }
+  console.log();
 } else {
   console.log(`\nNOT FUNDED — request tNIGHT at the faucet:\n  ${config.faucet}\n`);
 }

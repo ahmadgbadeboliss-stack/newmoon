@@ -99,7 +99,10 @@ const providers: MidnightProviders<'increment', typeof PRIVATE_STATE_ID, Counter
     privateStateStoreName: 'counter-private-state',
     signingKeyStoreName: 'counter-signing-keys',
     privateStoragePasswordProvider: () =>
-      process.env['MIDNIGHT_PRIVATE_STATE_PASSWORD'] ?? 'newmoon-counter-demo-password',
+      // The private state store requires 3 of 4 character classes, so this
+      // fallback must satisfy that too. Override it in .env for real use --
+      // it encrypts the owner key at rest.
+      process.env['MIDNIGHT_PRIVATE_STATE_PASSWORD'] ?? 'Newmoon-Counter-Demo-1',
     accountId: provider.getCoinPublicKey(),
   }),
   publicDataProvider: indexerPublicDataProvider(config.indexer, config.indexerWS),
@@ -119,6 +122,27 @@ const deployed: DeployedContract<Contract> = await deployContract(providers, {
 
 const contractAddress = deployed.deployTxData.public.contractAddress;
 logger.info(`Deploy transaction submitted (txId: ${deployed.deployTxData.public.txId})`);
+
+// ─── persist deployment info FIRST (gitignored — contains the owner key) ──
+// The owner key is generated in memory at the top of this script and exists
+// nowhere else. Once the contract is on-chain, losing the key means nothing
+// can ever increment it again -- the contract is dead. So this write happens
+// immediately after deploy, before the demo call, which can fail.
+writeFileSync(
+  'deployment.json',
+  JSON.stringify(
+    {
+      network,
+      contractAddress,
+      ownerKeyHex: Buffer.from(ownerKey).toString('hex'),
+      deployTxId: deployed.deployTxData.public.txId,
+      deployedAt: new Date().toISOString(),
+    },
+    null,
+    2,
+  ),
+);
+logger.info('Saved deployment.json (owner key preserved)');
 
 console.log('\n════════════════════════════════════════════════════════');
 console.log('  CONTRACT DEPLOYED');
@@ -144,23 +168,6 @@ logger.info(`On-chain count after increment: ${onChain.count}`);
 if (onChain.count !== 1n) {
   throw new Error(`Expected on-chain count 1, got ${onChain.count}`);
 }
-
-// ─── persist deployment info (gitignored — contains the owner key) ────
-writeFileSync(
-  'deployment.json',
-  JSON.stringify(
-    {
-      network,
-      contractAddress,
-      ownerKeyHex: Buffer.from(ownerKey).toString('hex'),
-      deployTxId: deployed.deployTxData.public.txId,
-      deployedAt: new Date().toISOString(),
-    },
-    null,
-    2,
-  ),
-);
-logger.info('Saved deployment.json');
 
 // Save the synced wallet state so future runs (increment.ts) resume instantly.
 await wallet.saveState();

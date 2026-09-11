@@ -67,7 +67,9 @@ const providers: MidnightProviders<'increment', typeof PRIVATE_STATE_ID, Counter
     privateStateStoreName: 'counter-private-state',
     signingKeyStoreName: 'counter-signing-keys',
     privateStoragePasswordProvider: () =>
-      process.env['MIDNIGHT_PRIVATE_STATE_PASSWORD'] ?? 'newmoon-counter-demo-password',
+      // Must match the password deploy.ts used, and satisfy the store's
+      // 3-of-4 character-class rule.
+      process.env['MIDNIGHT_PRIVATE_STATE_PASSWORD'] ?? 'Newmoon-Counter-Demo-1',
     accountId: provider.getCoinPublicKey(),
   }),
   publicDataProvider: indexerPublicDataProvider(config.indexer, config.indexerWS),
