@@ -9,6 +9,7 @@
   },
   "scripts": {
     "compile": "compact compile contracts/counter.compact managed/counter",
+    "verify:compile": "tsx scripts/verify-compile.ts",
     "test": "NODE_OPTIONS='--experimental-vm-modules' vitest run",
     "test:watch": "NODE_OPTIONS='--experimental-vm-modules' vitest",
     "proof:up": "docker compose up -d --wait proof-server",

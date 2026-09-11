@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# A newer push to the same branch makes an in-flight run obsolete.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compile, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # The Compact toolchain is a standalone binary (rustup-style), not an
+      # npm package. `compact` is the version manager; the compiler itself is
+      # pinned separately so CI compiles exactly what we compile locally.
+      - name: Install Compact toolchain
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf \
+            https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
+          echo "$HOME/.compact/bin" >> "$GITHUB_PATH"
+
+      - name: Pin the Compact compiler
+        run: |
+          compact update ${{ env.COMPACT_COMPILER_VERSION }}
+          compact --version
+          compact compile --version
+        env:
+          COMPACT_COMPILER_VERSION: 0.31.1
+
+      - name: Compile the contract
+        run: yarn compile
+
+      # The circuits and keys the tests and the frontend both load.
+      - name: Verify managed/ artifacts were generated
+        run: yarn verify:compile
+
+      - name: Run tests
+        run: yarn test
+
+      - name: Type-check
+        run: |
+          yarn typecheck
+          yarn tsc --noEmit -p tsconfig.web.json
+
+      - name: Build the frontend
+        run: yarn build
+        env:
+          # A placeholder so the production build exercises the configured
+          # path; the real address is set in the host's env at deploy time.
+          VITE_CONTRACT_ADDRESS: ${{ vars.VITE_CONTRACT_ADDRESS }}
