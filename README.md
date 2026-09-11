@@ -12,10 +12,18 @@ Midnight Builder Challenge — Levels 1–3 (New Moon → First Quarter)
 
 ## Contract Address
 
-| Network  | Address                                    |
-|----------|--------------------------------------------|
-| Preview  | [PASTE ADDRESS AFTER DEPLOY]               |
-| Preprod  | — (not used; this project deploys to Preview) |
+| Network  | Address                                                            |
+|----------|--------------------------------------------------------------------|
+| Preview  | `6bb5e347936c462b4b51111014b8f4f9eefb740c56936e78e6b616df7444b298` |
+| Preprod  | — (not used; this project deploys to Preview)                      |
+
+Verify it on the Preview indexer — this returns a `ContractDeploy` at that address:
+
+```bash
+curl -s https://indexer.preview.midnight.network/api/v4/graphql \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"{ contractAction(address: \"6bb5e347936c462b4b51111014b8f4f9eefb740c56936e78e6b616df7444b298\") { __typename address } }"}'
+```
 
 ## What This Does
 

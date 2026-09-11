@@ -13,6 +13,11 @@ dist/
 deployment.json
 .states/
 
+# Encrypted private state store (holds the owner key) - never commit
+midnight-level-db/
+counter-private-state/
+counter-signing-keys/
+
 # Editor
 .vscode/
 .idea/
@@ -23,3 +28,4 @@ Thumbs.db
 
 # Logs
 *.log
+logs/
