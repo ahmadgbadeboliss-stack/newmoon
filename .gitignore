@@ -1,5 +1,8 @@
 # Dependencies
+# Both forms: the trailing slash matches a real directory, the bare name also
+# matches a symlink (this repo had node_modules committed as one).
 node_modules/
+node_modules
 
 # Environment secrets - never commit
 .env
