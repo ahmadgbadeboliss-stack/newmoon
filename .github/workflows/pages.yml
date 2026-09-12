@@ -1,0 +1,71 @@
+name: Deploy web app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Pages needs these to publish; contents:read is enough to check out.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never run two deploys at once, but let a queued one finish rather than
+# cancelling it -- a cancelled deploy can leave Pages on a half-built site.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: yarn
+
+      - run: yarn install --frozen-lockfile
+
+      # The frontend imports the compiled contract (managed/counter) for its
+      # ledger decoder and circuit, and managed/ is gitignored -- so the
+      # contract must be compiled before the bundle can build.
+      - name: Install Compact toolchain
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf \
+            https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
+          echo "$HOME/.compact/bin" >> "$GITHUB_PATH"
+
+      - name: Pin the Compact compiler
+        run: compact update 0.31.1
+
+      - name: Compile the contract
+        run: yarn compile
+
+      - name: Build
+        run: yarn build
+        env:
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_CONTRACT_ADDRESS: 6bb5e347936c462b4b51111014b8f4f9eefb740c56936e78e6b616df7444b298
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

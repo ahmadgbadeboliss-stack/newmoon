@@ -8,7 +8,9 @@ Midnight Builder Challenge — Levels 1–3 (New Moon → First Quarter)
 
 ## Live Demo
 
-[PASTE LIVE URL AFTER DEPLOYING THE FRONTEND]
+**https://ahmadgbadeboliss-stack.github.io/newmoon/**
+
+Deployed from `main` by [`.github/workflows/pages.yml`](.github/workflows/pages.yml) on every push. The page reads the deployed Preview contract's public state with no wallet connected — the tally and owner commitment are public, so anyone can verify them.
 
 ## Contract Address
 

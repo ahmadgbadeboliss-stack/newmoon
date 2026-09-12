@@ -6,6 +6,10 @@ import react from '@vitejs/plugin-react';
 // shim keep the ledger/compact-runtime packages working in the browser.
 export default defineConfig({
   plugins: [react()],
+  // GitHub Pages serves the site from a /<repo>/ subpath, so asset URLs need
+  // that prefix. Set by the Pages workflow; defaults to '/' everywhere else
+  // (local dev, Vercel, Netlify).
+  base: process.env['VITE_BASE_PATH'] ?? '/',
   define: {
     global: 'globalThis',
   },
