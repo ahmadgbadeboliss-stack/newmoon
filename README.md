@@ -12,6 +12,12 @@ Midnight Builder Challenge — Levels 1–3 (New Moon → First Quarter)
 
 Deployed from `main` by [`.github/workflows/pages.yml`](.github/workflows/pages.yml) on every push. The page reads the deployed Preview contract's public state with no wallet connected — the tally and owner commitment are public, so anyone can verify them.
 
+## Demo Video
+
+**https://www.loom.com/share/090bff6d3be640d8aad00db6f338a664**
+
+Walks through the full flow: wallet connect, the circuit call, and the privacy behaviour — a wrong key rejected and the owner authorized, with the secret key never shown.
+
 ## Contract Address
 
 | Network  | Address                                                            |
@@ -217,7 +223,3 @@ once proving finishes. It appears nowhere in the page — only the result does.
 ### Mobile layout
 
 ![web app on a 390px viewport](docs/screenshots/07-webapp-mobile.png)
-
-## Demo Video
-
-[PLACEHOLDER — I will add the link after recording]
