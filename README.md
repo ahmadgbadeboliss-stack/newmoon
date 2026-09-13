@@ -179,14 +179,45 @@ and anonymous surveys with verifiable participation.
 
 Full write-up in [PROPOSAL.md](./PROPOSAL.md).
 
+## Screenshots
+
+### Compile output — circuits, witnesses, ledger state, artifacts
+
+![compact compile output](docs/screenshots/01-compile.png)
+
+### Test suite — 12 passing
+
+![yarn test, 12 passing](docs/screenshots/02-tests.png)
+
+### Contract deployed — verified against the Preview indexer
+
+![contract deployed on Preview](docs/screenshots/03-deployed.png)
+
+### The dApp reading public state — no wallet connected
+
+The tally and owner commitment are public, so the page renders them for any
+visitor. The key is not involved in reading.
+
+![web app reading public contract state](docs/screenshots/04-webapp-live.png)
+
+### Privacy behaviour: a wrong key is rejected
+
+The circuit rejects it locally. No transaction is built, so the attempt leaves
+no on-chain trace — and the key that was tried is never echoed back.
+
+![web app rejecting a non-owner key](docs/screenshots/05-webapp-rejected.png)
+
+### Privacy behaviour: the owner is authorized
+
+The key is entered into a masked field, used as a private witness, and cleared
+once proving finishes. It appears nowhere in the page — only the result does.
+
+![web app authorizing the owner](docs/screenshots/06-webapp-authorized.png)
+
+### Mobile layout
+
+![web app on a 390px viewport](docs/screenshots/07-webapp-mobile.png)
+
 ## Demo Video
 
 [PLACEHOLDER — I will add the link after recording]
-
-## Screenshots
-
-*Compile output (circuits listed):* [ADD SCREENSHOT — run `yarn verify:compile`]
-
-*Contract deployed with address:* [ADD SCREENSHOT]
-
-*Test output (12 passing):* [ADD SCREENSHOT — run `yarn test`]
