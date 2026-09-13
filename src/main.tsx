@@ -1,3 +1,7 @@
+// MUST be first: installs the Buffer global that compact-runtime's hex
+// helpers depend on. See src/polyfills.ts.
+import './polyfills';
+
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
